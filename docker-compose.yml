@@ -1,0 +1,20 @@
+version: '3.8'
+
+services:
+  postgres:
+    image: postgres:14-alpine
+    container_name: cinema-db
+    environment:
+      POSTGRES_DB: cinema_db
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: postgres
+    ports:
+      - "5432:5432"
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+      - ./schema.sql:/docker-entrypoint-initdb.d/1-schema.sql
+      - ./seed.sql:/docker-entrypoint-initdb.d/2-seed.sql
+    restart: unless-stopped
+
+volumes:
+  postgres_data:
