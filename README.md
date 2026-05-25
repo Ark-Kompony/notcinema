@@ -1,15 +1,22 @@
-# Cinema Management System
+# 🎬 Cinema Management System - Bishkek
 
-Cinema booking and management system for Bishkek cinemas.
+Full-stack cinema booking and management system for Bishkek cinemas.
 
 ## Tech Stack
 
-- **Backend:** Spring Boot 3.2.5
+### Backend
+- **Spring Boot:** 3.2.5
+- **Java:** 17
 - **Database:** PostgreSQL 14+
 - **Security:** Spring Security + JWT
 - **Payment:** Stripe API
 - **Build Tool:** Maven
-- **Java:** 17
+
+### Frontend
+- **React:** 18
+- **Vite:** 8.0
+- **Axios:** HTTP client
+- **Modern CSS:** Responsive design
 
 ## Features
 
@@ -26,39 +33,24 @@ Cinema booking and management system for Bishkek cinemas.
 
 - Java 17 or higher
 - Maven 3.6+
-- PostgreSQL 14+
+- PostgreSQL 14+ (or Docker)
+- Node.js 18+
+- npm or yarn
 - Stripe account (for payments)
 
-## Setup
+## Quick Start
 
-### 1. Database Setup
-
-```bash
-# Create database
-createdb cinema_db
-
-# The schema and seed data will be automatically applied by Flyway on first run
-```
-
-### 2. Configuration
-
-Create `.env` file or set environment variables:
+### 1. Database Setup (Docker)
 
 ```bash
-# Database
-SPRING_DATASOURCE_URL=jdbc:postgresql://localhost:5432/cinema_db
-SPRING_DATASOURCE_USERNAME=postgres
-SPRING_DATASOURCE_PASSWORD=your_password
+# Start PostgreSQL in Docker
+docker compose up -d
 
-# JWT
-JWT_SECRET=your-secret-key-at-least-256-bits-long
-
-# Stripe
-STRIPE_API_KEY=sk_test_your_stripe_test_key
-STRIPE_WEBHOOK_SECRET=whsec_your_webhook_secret
+# Check if running
+docker ps
 ```
 
-### 3. Build and Run
+### 2. Backend Setup
 
 ```bash
 # Build
@@ -66,12 +58,30 @@ mvn clean install
 
 # Run
 mvn spring-boot:run
-
-# Or run the JAR
-java -jar target/cinema-management-1.0.0.jar
 ```
 
-The application will start on `http://localhost:8080`
+Backend will start on `http://localhost:8080`
+
+### 3. Frontend Setup
+
+```bash
+# Navigate to frontend
+cd frontend
+
+# Install dependencies
+npm install
+
+# Start development server
+npm run dev
+```
+
+Frontend will start on `http://localhost:5173`
+
+### 4. Access the Application
+
+- **Frontend:** http://localhost:5173
+- **Backend API:** http://localhost:8080/api
+- **Database:** localhost:5432 (cinema_db)
 
 ## API Documentation
 
