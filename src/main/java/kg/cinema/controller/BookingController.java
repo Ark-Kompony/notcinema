@@ -37,10 +37,17 @@ public class BookingController {
             request.getSeatIds()
         );
 
+        // Calculate total amount
+        java.math.BigDecimal totalAmount = reservations.stream()
+            .map(r -> bookingService.calculateTicketPrice(r.getShowtime().getId(), r.getSeat().getId()))
+            .reduce(java.math.BigDecimal.ZERO, java.math.BigDecimal::add);
+
         Map<String, Object> response = new HashMap<>();
         response.put("sessionToken", reservations.get(0).getSessionToken());
         response.put("expiresAt", reservations.get(0).getExpiresAt());
-        response.put("reservations", reservations);
+        response.put("seatCount", reservations.size());
+        response.put("totalAmount", totalAmount);
+        response.put("message", "Seats reserved successfully");
 
         return ResponseEntity.ok(response);
     }

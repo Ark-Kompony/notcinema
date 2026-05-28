@@ -7,10 +7,15 @@ const API_URL = 'http://localhost:8080/api'
 function App() {
   const [movies, setMovies] = useState([])
   const [selectedMovie, setSelectedMovie] = useState(null)
+  const [showtimes, setShowtimes] = useState([])
+  const [selectedShowtime, setSelectedShowtime] = useState(null)
+  const [seats, setSeats] = useState([])
+  const [selectedSeats, setSelectedSeats] = useState([])
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState(null)
-  const [view, setView] = useState('movies') // 'movies', 'details', 'register', 'login'
+  const [view, setView] = useState('movies') // 'movies', 'details', 'showtimes', 'seats', 'register', 'login', 'admin'
   const [user, setUser] = useState(null)
+  const [token, setToken] = useState(localStorage.getItem('token'))
   const [formData, setFormData] = useState({
     email: '',
     password: '',
@@ -21,6 +26,9 @@ function App() {
 
   useEffect(() => {
     fetchMovies()
+    if (token) {
+      fetchCurrentUser()
+    }
   }, [])
 
   const fetchMovies = async () => {
@@ -37,6 +45,19 @@ function App() {
     }
   }
 
+  const fetchCurrentUser = async () => {
+    try {
+      const response = await axios.get(`${API_URL}/auth/me`, {
+        headers: { Authorization: `Bearer ${token}` }
+      })
+      setUser(response.data)
+    } catch (err) {
+      console.error('Failed to fetch user', err)
+      localStorage.removeItem('token')
+      setToken(null)
+    }
+  }
+
   const fetchMovieDetails = async (id) => {
     try {
       const response = await axios.get(`${API_URL}/movies/${id}`)
@@ -48,10 +69,70 @@ function App() {
     }
   }
 
+  const fetchShowtimes = async (movieId) => {
+    try {
+      const response = await axios.get(`${API_URL}/showtimes/movie/${movieId}`)
+      setShowtimes(response.data)
+      setView('showtimes')
+    } catch (err) {
+      setError('Failed to load showtimes')
+      console.error(err)
+    }
+  }
+
+  const fetchSeats = async (showtimeId) => {
+    try {
+      const response = await axios.get(`${API_URL}/showtimes/${showtimeId}/seats`)
+      setSeats(response.data)
+      setView('seats')
+    } catch (err) {
+      setError('Failed to load seats')
+      console.error(err)
+    }
+  }
+
+  const handleSeatClick = (seat) => {
+    if (seat.isAvailable) {
+      if (selectedSeats.find(s => s.id === seat.id)) {
+        setSelectedSeats(selectedSeats.filter(s => s.id !== seat.id))
+      } else {
+        setSelectedSeats([...selectedSeats, seat])
+      }
+    }
+  }
+
+  const handleBooking = async () => {
+    if (!user) {
+      alert('Please login to book tickets')
+      setView('login')
+      return
+    }
+
+    if (selectedSeats.length === 0) {
+      alert('Please select at least one seat')
+      return
+    }
+
+    try {
+      const response = await axios.post(`${API_URL}/bookings/reserve`, {
+        showtimeId: selectedShowtime.id,
+        seatIds: selectedSeats.map(s => s.id)
+      }, {
+        headers: { Authorization: `Bearer ${token}` }
+      })
+
+      alert(`Booking successful! Total: ${response.data.totalAmount} KGS`)
+      setSelectedSeats([])
+      setView('movies')
+    } catch (err) {
+      alert('Booking failed: ' + (err.response?.data?.message || err.message))
+    }
+  }
+
   const handleRegister = async (e) => {
     e.preventDefault()
     try {
-      const response = await axios.post(`${API_URL}/auth/register`, {
+      await axios.post(`${API_URL}/auth/register`, {
         email: formData.email,
         password: formData.password,
         firstName: formData.firstName,
@@ -73,8 +154,16 @@ function App() {
         email: formData.email,
         password: formData.password
       })
-      setUser(response.data)
-      localStorage.setItem('token', response.data.token)
+      const newToken = response.data.accessToken
+      setToken(newToken)
+      localStorage.setItem('token', newToken)
+
+      // Fetch user details
+      const userResponse = await axios.get(`${API_URL}/auth/me`, {
+        headers: { Authorization: `Bearer ${newToken}` }
+      })
+      setUser(userResponse.data)
+
       alert('Login successful!')
       setView('movies')
       setFormData({ email: '', password: '', firstName: '', lastName: '', phone: '' })
@@ -85,6 +174,7 @@ function App() {
 
   const handleLogout = () => {
     setUser(null)
+    setToken(null)
     localStorage.removeItem('token')
     setView('movies')
   }
@@ -114,7 +204,10 @@ function App() {
             </>
           ) : (
             <>
-              <span>Welcome, {user.firstName}!</span>
+              <span>Welcome, {user.firstName}! ({user.role})</span>
+              {user.role === 'ADMIN' && (
+                <button onClick={() => setView('admin')}>Admin</button>
+              )}
               <button onClick={handleLogout}>Logout</button>
             </>
           )}
@@ -202,12 +295,70 @@ function App() {
               <p className="director">Director: {selectedMovie.director}</p>
               <p className="description">{selectedMovie.description}</p>
               {selectedMovie.status === 'in_theaters' && (
-                <button className="book-btn">Book Tickets</button>
+                <button className="book-btn" onClick={() => fetchShowtimes(selectedMovie.id)}>
+                  Book Tickets
+                </button>
               )}
               {selectedMovie.status === 'coming_soon' && (
                 <p className="coming-soon-label">Coming {selectedMovie.releaseDate}</p>
               )}
             </div>
+          </div>
+        </main>
+      )}
+
+      {view === 'showtimes' && (
+        <main className="main">
+          <button className="back-btn" onClick={() => setView('details')}>← Back to Movie</button>
+          <h2>Select Showtime</h2>
+          <div className="showtimes-list">
+            {showtimes.length === 0 ? (
+              <p>No showtimes available for this movie.</p>
+            ) : (
+              showtimes.map(showtime => (
+                <div key={showtime.id} className="showtime-card" onClick={() => {
+                  setSelectedShowtime(showtime)
+                  fetchSeats(showtime.id)
+                }}>
+                  <div className="showtime-time">
+                    {new Date(showtime.startTime).toLocaleString()}
+                  </div>
+                  <div className="showtime-info">
+                    <p>Hall: {showtime.hall?.name}</p>
+                    <p>Language: {showtime.language}</p>
+                    <p>Price: {showtime.basePrice} KGS</p>
+                  </div>
+                </div>
+              ))
+            )}
+          </div>
+        </main>
+      )}
+
+      {view === 'seats' && (
+        <main className="main">
+          <button className="back-btn" onClick={() => setView('showtimes')}>← Back to Showtimes</button>
+          <h2>Select Seats</h2>
+          <div className="screen">SCREEN</div>
+          <div className="seats-grid">
+            {seats.map(seat => (
+              <div
+                key={seat.id}
+                className={`seat ${!seat.isAvailable ? 'taken' : ''} ${
+                  selectedSeats.find(s => s.id === seat.id) ? 'selected' : ''
+                }`}
+                onClick={() => handleSeatClick(seat)}
+              >
+                {seat.rowNumber}-{seat.seatNumber}
+              </div>
+            ))}
+          </div>
+          <div className="booking-summary">
+            <p>Selected Seats: {selectedSeats.length}</p>
+            <p>Total: {selectedSeats.length * (selectedShowtime?.basePrice || 0)} KGS</p>
+            <button className="book-btn" onClick={handleBooking} disabled={selectedSeats.length === 0}>
+              Confirm Booking
+            </button>
           </div>
         </main>
       )}
@@ -288,6 +439,38 @@ function App() {
               <button type="submit">Login</button>
             </form>
             <p>Don't have an account? <a onClick={() => setView('register')}>Register</a></p>
+            <p className="test-credentials">
+              <small>Test: admin@cinema.kg / password123 or user@cinema.kg / password123</small>
+            </p>
+          </div>
+        </main>
+      )}
+
+      {view === 'admin' && user?.role === 'ADMIN' && (
+        <main className="main">
+          <h2>Admin Dashboard</h2>
+          <div className="admin-panel">
+            <div className="admin-card">
+              <h3>📊 Statistics</h3>
+              <p>Total Movies: {movies.length}</p>
+              <p>Now Showing: {movies.filter(m => m.status === 'in_theaters').length}</p>
+              <p>Coming Soon: {movies.filter(m => m.status === 'coming_soon').length}</p>
+            </div>
+            <div className="admin-card">
+              <h3>🎬 Manage Movies</h3>
+              <p>Add, edit, or remove movies from the catalog</p>
+              <button className="admin-btn">Manage Movies</button>
+            </div>
+            <div className="admin-card">
+              <h3>👥 User Management</h3>
+              <p>View and manage user accounts</p>
+              <button className="admin-btn">Manage Users</button>
+            </div>
+            <div className="admin-card">
+              <h3>💰 Revenue Reports</h3>
+              <p>View sales and revenue statistics</p>
+              <button className="admin-btn">View Reports</button>
+            </div>
           </div>
         </main>
       )}
