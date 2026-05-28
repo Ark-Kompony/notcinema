@@ -16,6 +16,7 @@ public class UserResponse {
     private String avatarUrl;
     private String role;
     private Boolean emailVerified;
+    private Boolean isActive;
 
     public static UserResponse fromUser(User user) {
         UserResponse response = new UserResponse();
@@ -28,6 +29,7 @@ public class UserResponse {
         response.setAvatarUrl(user.getAvatarUrl());
         response.setRole(user.getRole().name());
         response.setEmailVerified(user.getEmailVerified());
+        response.setIsActive(user.getIsActive());
         return response;
     }
 }

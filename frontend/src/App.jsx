@@ -1,6 +1,8 @@
 import { useState, useEffect } from 'react'
 import axios from 'axios'
 import './App.css'
+import './AdminPanel.css'
+import AdminPanel from './AdminPanel'
 
 const API_URL = 'http://localhost:8080/api'
 
@@ -447,32 +449,11 @@ function App() {
       )}
 
       {view === 'admin' && user?.role === 'ADMIN' && (
-        <main className="main">
-          <h2>Admin Dashboard</h2>
-          <div className="admin-panel">
-            <div className="admin-card">
-              <h3>📊 Statistics</h3>
-              <p>Total Movies: {movies.length}</p>
-              <p>Now Showing: {movies.filter(m => m.status === 'in_theaters').length}</p>
-              <p>Coming Soon: {movies.filter(m => m.status === 'coming_soon').length}</p>
-            </div>
-            <div className="admin-card">
-              <h3>🎬 Manage Movies</h3>
-              <p>Add, edit, or remove movies from the catalog</p>
-              <button className="admin-btn">Manage Movies</button>
-            </div>
-            <div className="admin-card">
-              <h3>👥 User Management</h3>
-              <p>View and manage user accounts</p>
-              <button className="admin-btn">Manage Users</button>
-            </div>
-            <div className="admin-card">
-              <h3>💰 Revenue Reports</h3>
-              <p>View sales and revenue statistics</p>
-              <button className="admin-btn">View Reports</button>
-            </div>
-          </div>
-        </main>
+        <AdminPanel
+          user={user}
+          token={token}
+          onLogout={handleLogout}
+        />
       )}
 
       <footer className="footer">

@@ -1,5 +1,6 @@
 package kg.cinema.controller;
 
+import kg.cinema.dto.response.UserResponse;
 import kg.cinema.entity.Order;
 import kg.cinema.entity.Promocode;
 import kg.cinema.entity.User;
@@ -19,6 +20,7 @@ import java.time.LocalTime;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.stream.Collectors;
 
 @RestController
 @RequestMapping("/api/admin")
@@ -87,8 +89,12 @@ public class AdminController {
      * Get all users
      */
     @GetMapping("/users")
-    public ResponseEntity<List<User>> getAllUsers() {
-        return ResponseEntity.ok(userService.getAllUsers());
+    public ResponseEntity<List<UserResponse>> getAllUsers() {
+        List<User> users = userService.getAllUsers();
+        List<UserResponse> response = users.stream()
+                .map(UserResponse::fromUser)
+                .collect(Collectors.toList());
+        return ResponseEntity.ok(response);
     }
 
     /**
